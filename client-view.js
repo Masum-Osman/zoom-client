@@ -3,17 +3,17 @@ ZoomMtg.prepareWebSDK()
 
 var authEndpoint = 'http://localhost:4000/zoom_auth_jwt'
 var sdkKey = '4EvPaJwQTl6lpYmcAeqFg'
-var meetingNumber = '93362050842'
+// var meetingNumber = '93362050842'
+var meetingNumber = '97057314707'
 var passWord = '123456'
-var role = 1
-var userName = '65b0d02d60023489a81394db'
+var role = 0
+var userName = 'Participant'
 var userEmail = 'masum@gmail.com'
 var registrantToken = ''
 var zakToken = 'aDFImFLu0idYeKfnun-TSKg517Sg0Ff8g'
 var leaveUrl = 'http://127.0.0.1:5500/'
 
 function getSignature() {
-  console.log("PROCESS ENV::: ", process.env.AUTH_API_ENDPOINT);
   fetch(authEndpoint, {
     method: 'POST',
     headers: {
@@ -53,8 +53,16 @@ function startMeeting(signature) {
         userEmail: userEmail,
         customerKey: "masumid",
         success: (success) => {
-          console.log("success-------", success)
-          createBreakoutRooms()
+          console.log("success on joining meeting ------- ", success)
+          ZoomMtg.joinBreakoutRoom({
+            roomId: "room_1",
+            success: () => {
+              console.log(`Successfully joined the breakout room: ${roomId}`);
+            },
+            error: (error) => {
+              console.error("Failed to join breakout room:", error);
+            }
+          })
         },
         error: (error) => {
           console.log(error)
@@ -67,40 +75,24 @@ function startMeeting(signature) {
   })
 }
 
-function createBreakoutRooms() {
-  const roomNames = ['Room 1', 'Room 2']; // Define the names of the breakout rooms
-
-  ZoomMtg.createBreakoutRoom({
-    data: roomNames,
-    success: (response) => {
-      console.log("Breakout rooms created successfully", response);
-      if (Array.isArray(response.rooms)) {
-        response.rooms.forEach((room) => {
-          breakoutRoomIds[room.name] = room.roomId; 
-        });
-      } else {
-        console.error("Response does not contain rooms array:", response);
+function fetchBreakoutRooms() {
+  ZoomMtg.getBreakoutRooms({
+      success: (rooms) => {
+          console.log("Fetched breakout rooms:", rooms);
+          if (rooms.length > 0) {
+              const firstRoomId = rooms[0].roomId; 
+              joinBreakoutRoom(firstRoomId); 
+          } else {
+              console.log("No breakout rooms available.");
+          }
+      },
+      error: (error) => {
+          console.error("Failed to fetch breakout rooms:", error);
       }
-      // openBreakoutRooms(); 
-    },
-    error: (error) => {
-      console.error("Failed to create breakout rooms:", error);
-    }
-  });
-}
-function openBreakoutRooms() {
-  ZoomMtg.openBreakoutRooms({
-    success: () => {
-      console.log("Breakout rooms opened successfully");
-      joinBreakoutRoom(breakoutRoomIds["Room 1"]); // Join the user to Room 1
-    },
-    error: (error) => {
-      console.error("Failed to open breakout rooms:", error);
-    }
   });
 }
 
-function joinBreakoutRoom(roomId) {
+function joinBreakOutRoom(roomId) {
   ZoomMtg.joinBreakoutRoom({
     roomId: roomId,
     success: () => {
@@ -109,20 +101,7 @@ function joinBreakoutRoom(roomId) {
     error: (error) => {
       console.error("Failed to join breakout room:", error);
     }
-  });
+  })
 }
 
-function createAndJoinMeeting() {
-  fetch('http://localhost:4000/create_meeting', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Meeting created:', data);
-    joinMeetingAsHost(data.signature, data.meetingNumber, data.password, data.sdkKey);
-  })
-  .catch(error => console.error('Error:', error));
-}
+// ok. imagine a scenario. host created a meeting with 20 breakout rooms. those rooms name are something like sku_1 to sku_20. each room can contain 50 participants. give me a way to 
